@@ -1,0 +1,60 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  namespace: default
+  name: orchid
+  labels:
+    app: orchid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchid
+  template:
+    metadata:
+      labels:
+        app: orchid
+    spec:
+      containers:
+        - name: orchid
+          image: ghcr.io/yurifrl/orchid-pkg:main
+          args:
+            - --host=$TODO
+          ports:
+            - containerPort: 8443
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchid
+  namespace: default
+spec:
+  ports:
+    - protocol: TCP
+      name: web
+      port: 8443
+  selector:
+    app: orchid
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: orchid
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: HostRegexp(`orchid.{domain}.{ext}`)
+      kind: Rule
+      services:
+        - name: orchid
+          port: 8443
